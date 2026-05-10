@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quiz des Marques de Voitures</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      height: 100%;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: linear-gradient(135deg, #0f3460 0%, #16537e 50%, #1e6091 100%);
+      color: #fff;
+      overflow-x: hidden;
+    }
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+    .app {
+      width: 100%;
+      max-width: 880px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 24px;
+      padding: 28px 24px;
+      backdrop-filter: blur(8px);
+      box-shadow: 0 30px 60px rgba(0,0,0,0.35);
+    }
+    h1 {
+      font-size: clamp(24px, 4vw, 36px);
+      text-align: center;
+      margin-bottom: 6px;
+      letter-spacing: -0.5px;
+    }
+    h1 .accent { color: #FFD166; }
+    .subtitle {
+      text-align: center;
+      opacity: 0.75;
+      font-size: 14px;
+      margin-bottom: 22px;
+    }
+    .row { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+    .field {
+      display: flex; flex-direction: column; gap: 6px;
+      flex: 1 1 220px;
+    }
+    .field label { font-size: 13px; opacity: 0.75; }
+    input[type="text"] {
+      width: 100%; padding: 12px 14px;
+      border-radius: 12px; border: 1px solid rgba(255,255,255,0.18);
+      background: rgba(255,255,255,0.08); color: #fff; font-size: 16px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    input[type="text"]:focus { border-color: #FFD166; }
+    .toggle {
+      display: flex; gap: 10px; justify-content: center;
+      margin: 18px 0 22px;
+    }
+    .toggle button {
+      flex: 1; max-width: 200px;
+      padding: 14px 18px; border-radius: 14px;
+      border: 2px solid rgba(255,255,255,0.18);
+      background: rgba(255,255,255,0.05); color: #fff;
+      font-size: 15px; font-weight: 600; cursor: pointer;
+      transition: all 0.15s;
+    }
+    .toggle button.active {
+      border-color: #FFD166;
+      background: rgba(255,209,102,0.18);
+      color: #FFD166;
+    }
+    .btn-primary {
+      display: block; width: 100%;
+      padding: 16px 20px;
+      border-radius: 14px; border: none;
+      background: linear-gradient(135deg, #FFD166, #F4A261);
+      color: #0f3460; font-size: 18px; font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 8px 20px rgba(255,209,102,0.3);
+      transition: transform 0.1s;
+    }
+    .btn-primary:hover { transform: translateY(-1px); }
+    .btn-primary:active { transform: translateY(1px); }
+    .btn-ghost {
+      padding: 10px 16px; border-radius: 10px;
+      background: rgba(255,255,255,0.08); color: #fff;
+      border: 1px solid rgba(255,255,255,0.15);
+      cursor: pointer; font-size: 14px;
+    }
+
+    /* Game screen */
+    .game-header {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 16px; gap: 12px; flex-wrap: wrap;
+    }
+    .progress-text { font-size: 13px; opacity: 0.7; }
+    .scores { display: flex; gap: 12px; }
+    .score-card {
+      padding: 8px 14px; border-radius: 10px;
+      background: rgba(255,255,255,0.06);
+      border: 2px solid transparent;
+      font-size: 14px;
+      transition: all 0.2s;
+    }
+    .score-card.active {
+      border-color: #FFD166;
+      background: rgba(255,209,102,0.15);
+    }
+    .score-card .name { font-weight: 600; }
+    .score-card .pts { color: #FFD166; font-weight: 700; margin-left: 6px; }
+
+    .turn-banner {
+      text-align: center;
+      padding: 14px 18px;
+      border-radius: 14px;
+      background: rgba(255,255,255,0.08);
+      margin-bottom: 18px;
+    }
+    .turn-banner .who { font-size: 14px; opacity: 0.75; }
+    .turn-banner .target {
+      font-size: clamp(28px, 5vw, 42px);
+      font-weight: 800;
+      color: #FFD166;
+      letter-spacing: -0.5px;
+      margin-top: 4px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 14px;
+    }
+    .choice {
+      aspect-ratio: 1.2 / 1;
+      background: #fff;
+      border-radius: 18px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      padding: 16px;
+      border: 4px solid transparent;
+      transition: transform 0.12s, border-color 0.15s, box-shadow 0.15s;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.2);
+      user-select: none;
+    }
+    .choice:hover { transform: translateY(-3px); }
+    .choice svg { max-width: 100%; max-height: 100%; }
+    .choice.correct {
+      border-color: #06D6A0;
+      box-shadow: 0 0 0 4px rgba(6,214,160,0.3), 0 6px 18px rgba(6,214,160,0.4);
+      animation: bounce 0.5s;
+    }
+    .choice.wrong {
+      border-color: #EF476F;
+      box-shadow: 0 0 0 4px rgba(239,71,111,0.3);
+      animation: shake 0.4s;
+    }
+    .choice.dim { opacity: 0.4; pointer-events: none; }
+
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      40% { transform: translateY(-10px); }
+      60% { transform: translateY(-4px); }
+    }
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-8px); }
+      75% { transform: translateX(8px); }
+    }
+
+    .feedback {
+      text-align: center;
+      margin-top: 18px;
+      min-height: 28px;
+      font-size: 18px;
+      font-weight: 600;
+    }
+    .feedback.ok { color: #06D6A0; }
+    .feedback.ko { color: #EF476F; }
+
+    /* Results */
+    .results {
+      text-align: center;
+    }
+    .trophy {
+      width: 90px; height: 90px;
+      margin: 8px auto 16px;
+      display: flex; align-items: center; justify-content: center;
+      background: linear-gradient(135deg, #FFD166, #F4A261);
+      border-radius: 50%;
+      box-shadow: 0 12px 30px rgba(255,209,102,0.4);
+    }
+    .trophy svg { width: 50px; height: 50px; fill: #0f3460; }
+    .winner-text {
+      font-size: clamp(22px, 4vw, 30px);
+      font-weight: 800;
+      margin-bottom: 4px;
+    }
+    .winner-sub { opacity: 0.75; margin-bottom: 24px; }
+    .final-scores {
+      display: flex; justify-content: center; gap: 18px;
+      flex-wrap: wrap; margin-bottom: 24px;
+    }
+    .final-score {
+      padding: 18px 24px;
+      border-radius: 16px;
+      background: rgba(255,255,255,0.08);
+      min-width: 160px;
+    }
+    .final-score.gold {
+      background: linear-gradient(135deg, rgba(255,209,102,0.25), rgba(244,162,97,0.18));
+      border: 2px solid #FFD166;
+    }
+    .final-score .nm { font-size: 14px; opacity: 0.8; }
+    .final-score .sc {
+      font-size: 36px; font-weight: 800; color: #FFD166;
+    }
+    .final-score .pct { font-size: 13px; opacity: 0.7; margin-top: 2px; }
+
+    @media (max-width: 480px) {
+      .app { padding: 18px 14px; border-radius: 18px; }
+      .grid { gap: 10px; }
+      .choice { padding: 10px; border-radius: 14px; border-width: 3px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app" id="app"></div>
+
+  <script>
+    // ───────────────────────────────────────────────────────────────────
+    // Logos: simplified inline SVG renditions for kids' recognition.
+    // Stylized geometric approximations (not exact trademark reproductions).
+    // ───────────────────────────────────────────────────────────────────
+    const BRANDS = [
+      { id: 'toyota', name: 'Toyota', svg: `
+        <svg viewBox="0 0 120 80">
+          <ellipse cx="60" cy="40" rx="55" ry="32" fill="none" stroke="#EB0A1E" stroke-width="5"/>
+          <ellipse cx="60" cy="40" rx="22" ry="28" fill="none" stroke="#EB0A1E" stroke-width="5"/>
+          <ellipse cx="60" cy="40" rx="42" ry="10" fill="none" stroke="#EB0A1E" stroke-width="5"/>
+        </svg>` },
+      { id: 'hyundai', name: 'Hyundai', svg: `
+        <svg viewBox="0 0 120 80">
+          <ellipse cx="60" cy="40" rx="55" ry="30" fill="none" stroke="#002C5F" stroke-width="4"/>
+          <text x="60" y="55" font-family="Arial Black, sans-serif" font-style="italic" font-size="44" font-weight="900" text-anchor="middle" fill="#002C5F">H</text>
+        </svg>` },
+      { id: 'kia', name: 'Kia', svg: `
+        <svg viewBox="0 0 120 60">
+          <text x="60" y="46" font-family="Arial Black, sans-serif" font-size="40" font-weight="900" text-anchor="middle" fill="#05141F" letter-spacing="3">KIA</text>
+        </svg>` },
+      { id: 'mazda', name: 'Mazda', svg: `
+        <svg viewBox="0 0 120 80">
+          <ellipse cx="60" cy="40" rx="55" ry="30" fill="none" stroke="#101010" stroke-width="4"/>
+          <path d="M 60 18 L 30 55 L 45 48 L 60 38 L 75 48 L 90 55 Z" fill="#101010"/>
+        </svg>` },
+      { id: 'skoda', name: 'Skoda', svg: `
+        <svg viewBox="0 0 100 100">
+          <circle cx="50" cy="50" r="46" fill="none" stroke="#0A4D2E" stroke-width="4"/>
+          <circle cx="50" cy="50" r="36" fill="none" stroke="#0A4D2E" stroke-width="2"/>
+          <path d="M 18 58 Q 45 55 70 48 L 60 40 L 78 38 L 65 50 L 75 60 L 55 56 Q 50 64 40 60 Z" fill="#0A4D2E"/>
+          <circle cx="60" cy="48" r="3" fill="#0A4D2E"/>
+        </svg>` },
+      { id: 'mitsubishi', name: 'Mitsubishi', svg: `
+        <svg viewBox="0 0 100 100">
+          <polygon points="50,12 64,36 50,40 36,36" fill="#E60012"/>
+          <polygon points="22,52 36,52 50,76 36,82" fill="#E60012"/>
+          <polygon points="78,52 64,52 50,76 64,82" fill="#E60012"/>
+        </svg>` },
+      { id: 'suzuki', name: 'Suzuki', svg: `
+        <svg viewBox="0 0 120 80">
+          <text x="60" y="62" font-family="Arial Black, sans-serif" font-style="italic" font-size="68" font-weight="900" text-anchor="middle" fill="#E2231A">S</text>
+        </svg>` },
+      { id: 'nissan', name: 'Nissan', svg: `
+        <svg viewBox="0 0 120 100">
+          <circle cx="60" cy="50" r="42" fill="none" stroke="#000" stroke-width="3"/>
+          <rect x="2" y="42" width="116" height="18" fill="#fff" stroke="#000" stroke-width="2"/>
+          <text x="60" y="56" font-family="Arial, sans-serif" font-size="13" font-weight="900" text-anchor="middle" fill="#000" letter-spacing="1">NISSAN</text>
+        </svg>` },
+      { id: 'honda', name: 'Honda', svg: `
+        <svg viewBox="0 0 120 80">
+          <rect x="8" y="14" width="104" height="52" rx="6" fill="none" stroke="#CC0000" stroke-width="4"/>
+          <text x="60" y="55" font-family="Arial Black, sans-serif" font-size="44" font-weight="900" text-anchor="middle" fill="#CC0000">H</text>
+        </svg>` },
+      { id: 'mercedes', name: 'Mercedes-Benz', svg: `
+        <svg viewBox="0 0 100 100">
+          <circle cx="50" cy="50" r="46" fill="none" stroke="#7C7C7C" stroke-width="4"/>
+          <line x1="50" y1="50" x2="50" y2="6" stroke="#7C7C7C" stroke-width="5"/>
+          <line x1="50" y1="50" x2="11" y2="72" stroke="#7C7C7C" stroke-width="5"/>
+          <line x1="50" y1="50" x2="89" y2="72" stroke="#7C7C7C" stroke-width="5"/>
+          <circle cx="50" cy="50" r="3" fill="#7C7C7C"/>
+        </svg>` },
+      { id: 'bmw', name: 'BMW', svg: `
+        <svg viewBox="0 0 100 100">
+          <circle cx="50" cy="50" r="46" fill="#000"/>
+          <circle cx="50" cy="50" r="35" fill="#fff"/>
+          <path d="M 50 15 A 35 35 0 0 1 85 50 L 50 50 Z" fill="#0066B1"/>
+          <path d="M 15 50 A 35 35 0 0 1 50 15 L 50 50 Z" fill="#fff"/>
+          <path d="M 50 85 A 35 35 0 0 1 15 50 L 50 50 Z" fill="#0066B1"/>
+          <path d="M 85 50 A 35 35 0 0 1 50 85 L 50 50 Z" fill="#fff"/>
+          <circle cx="50" cy="50" r="35" fill="none" stroke="#000" stroke-width="2"/>
+          <text x="22" y="22" font-family="Arial, sans-serif" font-size="9" font-weight="900" fill="#fff">B</text>
+          <text x="68" y="22" font-family="Arial, sans-serif" font-size="9" font-weight="900" fill="#fff">M</text>
+          <text x="68" y="84" font-family="Arial, sans-serif" font-size="9" font-weight="900" fill="#fff">W</text>
+        </svg>` },
+      { id: 'audi', name: 'Audi', svg: `
+        <svg viewBox="0 0 220 80">
+          <circle cx="40" cy="40" r="28" fill="none" stroke="#9C9C9C" stroke-width="4"/>
+          <circle cx="86" cy="40" r="28" fill="none" stroke="#9C9C9C" stroke-width="4"/>
+          <circle cx="132" cy="40" r="28" fill="none" stroke="#9C9C9C" stroke-width="4"/>
+          <circle cx="178" cy="40" r="28" fill="none" stroke="#9C9C9C" stroke-width="4"/>
+        </svg>` },
+      { id: 'volkswagen', name: 'Volkswagen', svg: `
+        <svg viewBox="0 0 100 100">
+          <circle cx="50" cy="50" r="46" fill="#001E50"/>
+          <circle cx="50" cy="50" r="42" fill="none" stroke="#fff" stroke-width="2"/>
+          <path d="M 28 28 L 38 50 L 28 50 Z" fill="#fff"/>
+          <path d="M 38 50 L 50 28 L 62 50 L 50 76 Z" fill="#fff"/>
+          <path d="M 62 50 L 72 28 L 72 50 Z" fill="#fff"/>
+          <text x="34" y="44" font-family="Arial Black, sans-serif" font-size="22" fill="#001E50" font-weight="900">V</text>
+          <text x="44" y="74" font-family="Arial Black, sans-serif" font-size="22" fill="#001E50" font-weight="900">W</text>
+        </svg>` },
+      { id: 'ford', name: 'Ford', svg: `
+        <svg viewBox="0 0 140 80">
+          <ellipse cx="70" cy="40" rx="65" ry="32" fill="#003478"/>
+          <ellipse cx="70" cy="40" rx="61" ry="28" fill="none" stroke="#fff" stroke-width="1.5"/>
+          <text x="70" y="52" font-family="Brush Script MT, Lucida Handwriting, cursive" font-size="34" text-anchor="middle" fill="#fff" font-style="italic" font-weight="700">Ford</text>
+        </svg>` },
+      { id: 'renault', name: 'Renault', svg: `
+        <svg viewBox="0 0 100 100">
+          <polygon points="50,4 92,50 50,96 8,50" fill="#FFCC33"/>
+          <polygon points="50,18 80,50 50,82 20,50" fill="#0f3460"/>
+          <polygon points="50,28 70,50 50,72 30,50" fill="#FFCC33"/>
+        </svg>` },
+      { id: 'peugeot', name: 'Peugeot', svg: `
+        <svg viewBox="0 0 100 100">
+          <path d="M 50 88 L 38 82 L 30 70 L 28 50 L 32 32 L 42 22 L 56 18 L 68 22 L 70 30 L 64 36 L 56 32 L 50 36 L 48 44 L 56 46 L 64 42 L 70 48 L 68 60 L 60 70 L 70 72 L 78 80 L 70 86 L 60 84 Z" fill="#000"/>
+          <circle cx="58" cy="28" r="2" fill="#fff"/>
+          <text x="50" y="98" font-family="Arial, sans-serif" font-size="0" fill="none">PEUGEOT</text>
+        </svg>` },
+      { id: 'citroen', name: 'Citroën', svg: `
+        <svg viewBox="0 0 100 100">
+          <path d="M 18 55 L 50 28 L 82 55 L 70 65 L 50 48 L 30 65 Z" fill="#cc1111"/>
+          <path d="M 18 78 L 50 51 L 82 78 L 70 88 L 50 71 L 30 88 Z" fill="#cc1111"/>
+        </svg>` },
+      { id: 'volvo', name: 'Volvo', svg: `
+        <svg viewBox="0 0 110 100">
+          <circle cx="45" cy="55" r="32" fill="none" stroke="#003057" stroke-width="6"/>
+          <line x1="68" y1="32" x2="98" y2="6" stroke="#003057" stroke-width="6"/>
+          <polygon points="98,6 78,6 98,26" fill="#003057"/>
+        </svg>` },
+      { id: 'lexus', name: 'Lexus', svg: `
+        <svg viewBox="0 0 120 80">
+          <ellipse cx="60" cy="40" rx="55" ry="32" fill="none" stroke="#1A1A1A" stroke-width="4"/>
+          <path d="M 38 22 L 38 58 L 78 58" fill="none" stroke="#1A1A1A" stroke-width="8"/>
+        </svg>` },
+      { id: 'seat', name: 'SEAT', svg: `
+        <svg viewBox="0 0 140 60">
+          <text x="70" y="46" font-family="Arial Black, sans-serif" font-size="36" font-weight="900" text-anchor="middle" fill="#A50034" letter-spacing="3">SEAT</text>
+        </svg>` },
+      { id: 'tesla', name: 'Tesla', svg: `
+        <svg viewBox="0 0 100 100">
+          <path d="M 8 18 L 92 18 L 92 28 L 56 28 L 56 88 L 44 88 L 44 28 L 8 28 Z" fill="#CC0000"/>
+          <path d="M 26 8 L 74 8 L 70 14 L 30 14 Z" fill="#CC0000"/>
+        </svg>` },
+      { id: 'mg', name: 'MG', svg: `
+        <svg viewBox="0 0 120 100">
+          <polygon points="22,30 98,30 116,50 98,70 22,70 4,50" fill="#CC0000"/>
+          <text x="60" y="62" font-family="Arial Black, sans-serif" font-size="34" font-weight="900" text-anchor="middle" fill="#fff" letter-spacing="2">MG</text>
+        </svg>` },
+      { id: 'byd', name: 'BYD', svg: `
+        <svg viewBox="0 0 140 70">
+          <ellipse cx="70" cy="35" rx="65" ry="30" fill="none" stroke="#0066CC" stroke-width="4"/>
+          <text x="70" y="48" font-family="Arial Black, sans-serif" font-size="32" font-weight="900" text-anchor="middle" fill="#0066CC" letter-spacing="2">BYD</text>
+        </svg>` },
+      { id: 'mini', name: 'Mini', svg: `
+        <svg viewBox="0 0 220 90">
+          <path d="M 4 45 L 50 30 L 50 60 Z" fill="#000"/>
+          <path d="M 216 45 L 170 30 L 170 60 Z" fill="#000"/>
+          <ellipse cx="110" cy="45" rx="58" ry="34" fill="#000"/>
+          <text x="110" y="56" font-family="Arial Black, sans-serif" font-size="28" font-weight="900" text-anchor="middle" fill="#fff" letter-spacing="2">MINI</text>
+        </svg>` },
+      { id: 'subaru', name: 'Subaru', svg: `
+        <svg viewBox="0 0 140 70">
+          <ellipse cx="70" cy="35" rx="65" ry="30" fill="#003DA5"/>
+          <ellipse cx="70" cy="35" rx="61" ry="26" fill="none" stroke="#fff" stroke-width="1"/>
+          <g fill="#fff">
+            <polygon points="40,22 42,28 48,28 43,32 45,38 40,34 35,38 37,32 32,28 38,28"/>
+            <polygon points="62,16 64,22 70,22 65,26 67,32 62,28 57,32 59,26 54,22 60,22"/>
+            <polygon points="62,42 64,48 70,48 65,52 67,58 62,54 57,58 59,52 54,48 60,48"/>
+            <polygon points="84,22 86,28 92,28 87,32 89,38 84,34 79,38 81,32 76,28 82,28"/>
+            <polygon points="100,42 102,48 108,48 103,52 105,58 100,54 95,58 97,52 92,48 98,48"/>
+            <polygon points="100,16 102,22 108,22 103,26 105,32 100,28 95,32 97,26 92,22 98,22"/>
+          </g>
+        </svg>` },
+    ];
+
+    // ───────────────────────────────────────────────────────────────────
+    // State
+    // ───────────────────────────────────────────────────────────────────
+    const state = {
+      screen: 'setup',
+      mode: 1,
+      players: ['Joueur 1', 'Joueur 2'],
+      questionsPerPlayer: 12,
+      questions: [],
+      currentIdx: 0,
+      scores: [0, 0],
+      locked: false,
+    };
+
+    function shuffle(arr) {
+      const a = [...arr];
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    }
+
+    function buildQuestions() {
+      const qpp = state.mode === 1 ? 20 : 12;
+      state.questionsPerPlayer = qpp;
+      const totalQ = state.mode * qpp;
+      const targets = shuffle(BRANDS).slice(0, Math.min(totalQ, BRANDS.length));
+      // If we need more than we have unique brands, pad with another shuffle.
+      while (targets.length < totalQ) {
+        targets.push(...shuffle(BRANDS));
+      }
+      const trimmed = targets.slice(0, totalQ);
+
+      const questions = [];
+      for (let i = 0; i < trimmed.length; i++) {
+        const target = trimmed[i];
+        const distractors = shuffle(BRANDS.filter(b => b.id !== target.id)).slice(0, 3);
+        const choices = shuffle([target, ...distractors]);
+        questions.push({
+          target,
+          choices,
+          player: i % state.mode,
+          answered: false,
+          correct: false,
+        });
+      }
+      state.questions = questions;
+      state.currentIdx = 0;
+      state.scores = [0, 0];
+    }
+
+    // ───────────────────────────────────────────────────────────────────
+    // Sound (tiny Web Audio beeps)
+    // ───────────────────────────────────────────────────────────────────
+    let audioCtx = null;
+    function beep(ok) {
+      try {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const ctx = audioCtx;
+        const o = ctx.createOscillator();
+        const g = ctx.createGain();
+        o.connect(g); g.connect(ctx.destination);
+        o.type = ok ? 'triangle' : 'sawtooth';
+        if (ok) {
+          o.frequency.setValueAtTime(660, ctx.currentTime);
+          o.frequency.linearRampToValueAtTime(990, ctx.currentTime + 0.15);
+        } else {
+          o.frequency.setValueAtTime(220, ctx.currentTime);
+          o.frequency.linearRampToValueAtTime(140, ctx.currentTime + 0.2);
+        }
+        g.gain.setValueAtTime(0.2, ctx.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+        o.start();
+        o.stop(ctx.currentTime + 0.3);
+      } catch (e) { /* silence */ }
+    }
+
+    // ───────────────────────────────────────────────────────────────────
+    // Rendering
+    // ───────────────────────────────────────────────────────────────────
+    const root = document.getElementById('app');
+
+    function render() {
+      if (state.screen === 'setup') return renderSetup();
+      if (state.screen === 'game') return renderGame();
+      if (state.screen === 'result') return renderResult();
+    }
+
+    function renderSetup() {
+      root.innerHTML = `
+        <h1>Quiz des <span class="accent">Marques de Voitures</span></h1>
+        <p class="subtitle">Reconnais les marques les plus présentes en Israël !</p>
+
+        <div class="toggle">
+          <button data-mode="1" class="${state.mode === 1 ? 'active' : ''}">1 joueur</button>
+          <button data-mode="2" class="${state.mode === 2 ? 'active' : ''}">2 joueurs</button>
+        </div>
+
+        <div class="row">
+          <div class="field">
+            <label>Nom du joueur 1</label>
+            <input type="text" id="p1" value="${escapeHtml(state.players[0])}" />
+          </div>
+          ${state.mode === 2 ? `
+            <div class="field">
+              <label>Nom du joueur 2</label>
+              <input type="text" id="p2" value="${escapeHtml(state.players[1])}" />
+            </div>
+          ` : ''}
+        </div>
+
+        <p class="subtitle" style="margin: 22px 0 14px;">
+          ${state.mode === 1
+            ? '20 questions — bonne chance !'
+            : '12 questions par joueur, en alternance — que le meilleur gagne !'}
+        </p>
+
+        <button class="btn-primary" id="start">Commencer</button>
+      `;
+
+      root.querySelectorAll('.toggle button').forEach(b => {
+        b.addEventListener('click', () => {
+          state.mode = parseInt(b.dataset.mode, 10);
+          // capture name input before re-render
+          const p1 = document.getElementById('p1');
+          if (p1) state.players[0] = p1.value || 'Joueur 1';
+          const p2 = document.getElementById('p2');
+          if (p2) state.players[1] = p2.value || 'Joueur 2';
+          render();
+        });
+      });
+
+      document.getElementById('start').addEventListener('click', () => {
+        const p1 = document.getElementById('p1').value.trim() || 'Joueur 1';
+        state.players[0] = p1;
+        if (state.mode === 2) {
+          const p2 = document.getElementById('p2').value.trim() || 'Joueur 2';
+          state.players[1] = p2;
+        }
+        buildQuestions();
+        state.screen = 'game';
+        render();
+      });
+    }
+
+    function renderGame() {
+      const q = state.questions[state.currentIdx];
+      if (!q) {
+        state.screen = 'result';
+        return render();
+      }
+      const totalForPlayer = state.questionsPerPlayer;
+      const playerProgress = state.questions
+        .slice(0, state.currentIdx)
+        .filter(x => x.player === q.player).length + 1;
+
+      root.innerHTML = `
+        <div class="game-header">
+          <div class="progress-text">
+            Question ${state.currentIdx + 1} / ${state.questions.length}
+          </div>
+          <div class="scores">
+            ${state.players.slice(0, state.mode).map((n, i) => `
+              <div class="score-card ${i === q.player ? 'active' : ''}">
+                <span class="name">${escapeHtml(n)}</span>
+                <span class="pts">${state.scores[i]}</span>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+
+        <div class="turn-banner">
+          <div class="who">
+            ${state.mode === 2 ? `Tour de <strong>${escapeHtml(state.players[q.player])}</strong> — ` : ''}
+            Trouve le logo&nbsp;:
+          </div>
+          <div class="target">${escapeHtml(q.target.name)}</div>
+        </div>
+
+        <div class="grid">
+          ${q.choices.map((c, i) => `
+            <div class="choice" data-id="${c.id}" data-i="${i}">${c.svg}</div>
+          `).join('')}
+        </div>
+
+        <div class="feedback" id="feedback">&nbsp;</div>
+
+        <div style="display:flex; justify-content:space-between; margin-top: 14px; gap:10px;">
+          <button class="btn-ghost" id="quit">Quitter</button>
+          <div class="progress-text" style="align-self:center;">
+            ${state.mode === 2 ? `${escapeHtml(state.players[q.player])} : ${playerProgress} / ${totalForPlayer}` : ''}
+          </div>
+        </div>
+      `;
+
+      root.querySelectorAll('.choice').forEach(el => {
+        el.addEventListener('click', () => onChoice(el, q));
+      });
+      document.getElementById('quit').addEventListener('click', () => {
+        if (confirm('Quitter la partie en cours ?')) {
+          state.screen = 'setup';
+          render();
+        }
+      });
+    }
+
+    function onChoice(el, q) {
+      if (state.locked) return;
+      state.locked = true;
+      const id = el.dataset.id;
+      const isCorrect = id === q.target.id;
+      q.answered = true;
+      q.correct = isCorrect;
+
+      const fb = document.getElementById('feedback');
+      const choices = root.querySelectorAll('.choice');
+
+      if (isCorrect) {
+        state.scores[q.player] += 1;
+        el.classList.add('correct');
+        choices.forEach(c => { if (c !== el) c.classList.add('dim'); });
+        fb.textContent = 'Bravo !';
+        fb.className = 'feedback ok';
+        beep(true);
+      } else {
+        el.classList.add('wrong');
+        // highlight the correct one
+        choices.forEach(c => {
+          if (c.dataset.id === q.target.id) c.classList.add('correct');
+          else if (c !== el) c.classList.add('dim');
+        });
+        fb.textContent = `Raté ! C'était : ${q.target.name}`;
+        fb.className = 'feedback ko';
+        beep(false);
+      }
+
+      setTimeout(() => {
+        state.locked = false;
+        state.currentIdx += 1;
+        if (state.currentIdx >= state.questions.length) {
+          state.screen = 'result';
+        }
+        render();
+      }, isCorrect ? 900 : 1500);
+    }
+
+    function renderResult() {
+      const total = state.questionsPerPlayer;
+      let winnerIdx = 0;
+      let tie = false;
+      if (state.mode === 2) {
+        if (state.scores[0] === state.scores[1]) tie = true;
+        else if (state.scores[1] > state.scores[0]) winnerIdx = 1;
+      }
+      const titleHtml = state.mode === 1
+        ? `Bien joué, ${escapeHtml(state.players[0])} !`
+        : (tie
+            ? 'Égalité parfaite !'
+            : `${escapeHtml(state.players[winnerIdx])} gagne !`);
+
+      const subHtml = state.mode === 1
+        ? `Tu as trouvé ${state.scores[0]} marques sur ${total}.`
+        : (tie
+            ? 'Vous êtes ex æquo, partie revanche ?'
+            : `Avec ${state.scores[winnerIdx]} bonnes réponses sur ${total}.`);
+
+      root.innerHTML = `
+        <div class="results">
+          <div class="trophy">
+            <svg viewBox="0 0 24 24"><path d="M5 4h14v3a5 5 0 0 1-4 4.9V14h2a3 3 0 0 1 3 3v3H4v-3a3 3 0 0 1 3-3h2v-2.1A5 5 0 0 1 5 7V4zm-3 0h2v3a3 3 0 0 1-2 2.83V4zm17 0h2v5.83A3 3 0 0 1 19 7V4z"/></svg>
+          </div>
+          <div class="winner-text">${titleHtml}</div>
+          <div class="winner-sub">${subHtml}</div>
+
+          <div class="final-scores">
+            ${state.players.slice(0, state.mode).map((n, i) => {
+              const s = state.scores[i];
+              const pct = Math.round((s / total) * 100);
+              const isWinner = state.mode === 2 && !tie && i === winnerIdx;
+              return `
+                <div class="final-score ${isWinner ? 'gold' : ''}">
+                  <div class="nm">${escapeHtml(n)}</div>
+                  <div class="sc">${s} / ${total}</div>
+                  <div class="pct">${pct}%</div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+
+          <div class="row" style="justify-content:center;">
+            <button class="btn-primary" id="again" style="max-width:280px;">Nouvelle partie</button>
+          </div>
+          <div style="margin-top:10px;">
+            <button class="btn-ghost" id="back">Changer les joueurs</button>
+          </div>
+        </div>
+      `;
+
+      document.getElementById('again').addEventListener('click', () => {
+        buildQuestions();
+        state.screen = 'game';
+        render();
+      });
+      document.getElementById('back').addEventListener('click', () => {
+        state.screen = 'setup';
+        render();
+      });
+    }
+
+    function escapeHtml(s) {
+      return String(s).replace(/[&<>"']/g, c => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      }[c]));
+    }
+
+    render();
+  </script>
+</body>
+</html>
